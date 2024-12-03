@@ -75,21 +75,25 @@ public class CandyBound : MonoBehaviour
     {
         isDragging = false;
         Vector3 snappedPosition = SnapToGrid(transform.position);
-        if (IsValidCell(snappedPosition) && !_done)
+        if (!_done)
         {
-            transform.position = snappedPosition;
-            foreach(GameObject candy in CandyChild)
+            if (IsValidCell(snappedPosition))
             {
-                candy.GetComponent<Candy>().CanCheck = true;
-            }
-            _gameManager.SpawnBound(startPosition);
+                transform.position = snappedPosition;
+                foreach (GameObject candy in CandyChild)
+                {
+                    candy.GetComponent<Candy>().CanCheck = true;
+                }
+                _gameManager.SpawnBound(startPosition);
 
-            _done = true;
+                _done = true;
+            }
+            else
+            {
+                StartCoroutine(MoveToStartPosition());
+            }
         }
-        else
-        {
-            StartCoroutine(MoveToStartPosition());
-        }
+       
     }
     Vector3 SnapToGrid(Vector3 position)
     {
@@ -137,7 +141,7 @@ public class CandyBound : MonoBehaviour
         return false; // Không có cell tại vị trí này
        
     }
-   
+
     System.Collections.IEnumerator MoveToStartPosition()
     {
         float elapsedTime = 0;
@@ -156,7 +160,7 @@ public class CandyBound : MonoBehaviour
 
 
     /// Handle Scale child Object 
-   
+
 
 
     public void HandleDisabledChild()
@@ -171,26 +175,30 @@ public class CandyBound : MonoBehaviour
         if (activeChildren.Count == 1)
         {
             StartCoroutine(MoveAndScaleToCenter(activeChildren[0]));
+         
             return;
         }
-
         // Handle when only two objects remain
-        if (activeChildren.Count == 2)
+        else if (activeChildren.Count == 2)
         {
-            StartCoroutine(ScaleAndRepositionMultiple(null, activeChildren));
+            StartCoroutine(ScaleAndRepositionMultiple(activeChildren));
+          
             return;
         }
-
-        // Find the disabled child
-        GameObject disabledChild = CandyChild.FirstOrDefault(child => !child.activeSelf);
-        if (disabledChild == null) return;
-
-        // Find the best child to scale
-        GameObject childToScale = FindBestChildToScale(disabledChild);
-        if (childToScale != null)
+        else
         {
-            StartCoroutine(ScaleAndRepositionChild(disabledChild, childToScale));
-        }
+            // Find the disabled child
+            GameObject disabledChild = CandyChild.FirstOrDefault(child => !child.activeSelf);
+            if (disabledChild == null) return;
+
+            // Find the best child to scale
+            GameObject childToScale = FindBestChildToScale(disabledChild);
+            if (childToScale != null)
+            {
+                StartCoroutine(ScaleAndRepositionChild(disabledChild, childToScale));
+              
+            }
+        } 
     }
 
     private GameObject FindBestChildToScale(GameObject disabledChild)
@@ -250,7 +258,8 @@ public class CandyBound : MonoBehaviour
         // Animation parameters
         float duration = 0.5f;
         float elapsedTime = 0;
-
+        Mathf.Clamp(childToScale.transform.localScale.y, 0, 1);
+        Mathf.Clamp(childToScale.transform.localScale.x, 0, 1);
         while (elapsedTime < duration)
         {
             // Interpolate scale
@@ -269,68 +278,94 @@ public class CandyBound : MonoBehaviour
 
         isScaling = false;
     }
-    // Special case handler
-    private List<GameObject> HandleSpecialCase()
-    {
-        // Get active children
-        List<GameObject> activeChildren = CandyChild.Where(child => child.activeSelf).ToList();
 
-        // Check if exactly 2 objects remain and their scales are equal
-        if (activeChildren.Count == 2)
-        {
-            Vector3 scale1 = activeChildren[0].transform.localScale;
-            Vector3 scale2 = activeChildren[1].transform.localScale;
-
-            if (Mathf.Approximately(scale1.x, scale2.x) && Mathf.Approximately(scale1.y, scale2.y))
-            {
-                return activeChildren; // Return both objects
-            }
-        }
-        return null;
-    }
+  
 
     // Coroutine to scale and reposition multiple objects
-    private IEnumerator ScaleAndRepositionMultiple(GameObject disabledChild, List<GameObject> objectsToScale)
+    private IEnumerator ScaleAndRepositionMultiple(List<GameObject> objectsToScale)
     {
-        isScaling = true;
+        if (objectsToScale == null || objectsToScale.Count < 2)
+        {
+            Debug.LogError("Invalid input: At least 2 objects are required.");
+            yield break;
+        }
 
+        isScaling = true;
+        Debug.Log(this.name + " Scaling started.");
+
+        // Lấy hai đối tượng
         GameObject child1 = objectsToScale[0];
         GameObject child2 = objectsToScale[1];
 
-        // Calculate combined scale and position
-        Vector3 combinedScale = child1.transform.localScale;
-        Vector3 targetScale = combinedScale;
+        // Lấy scale ban đầu của cả hai
+        Vector3 scale1 = child1.transform.localScale;
+        Vector3 scale2 = child2.transform.localScale;
 
+        // Tính toán đối tượng nhỏ hơn (nếu cần scale riêng lẻ)
+        GameObject smallerObject = scale1.magnitude < scale2.magnitude ? child1 : child2;
+        GameObject largerObject = smallerObject == child1 ? child2 : child1;
+
+        Vector3 targetScaleSmaller = smallerObject.transform.localScale;
+        Vector3 targetScaleLarger = largerObject.transform.localScale;
+
+        // Xác định target scale
+       
+
+        // Tính toán target position cho cả hai
         Vector3 targetPosition1 = child1.transform.localPosition;
         Vector3 targetPosition2 = child2.transform.localPosition;
-        
-
 
         if (child1.transform.localPosition.x == child2.transform.localPosition.x)
         {
+            // Nếu trục X của hai đối tượng giống nhau
             targetPosition1.x = 0f;
             targetPosition2.x = 0f;
-            targetScale.x = combinedScale.x*2;
-            Mathf.Clamp(targetScale.x,0,1);
+            if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+            {
+                // Nếu cả hai có kích thước bằng nhau, scale cả hai
+                targetScaleSmaller.x *= 2f; // Scale lên gấp đôi
+                targetScaleLarger = targetScaleSmaller; // Giữ cùng scale
+            }
+            else
+            {
+                // Scale đối tượng nhỏ hơn
+                targetScaleSmaller.x *= 2f;
+            }
         }
-        else{
+        else
+        {
+            // Nếu trục Y của hai đối tượng giống nhau
             targetPosition1.y = 0f;
             targetPosition2.y = 0f;
-            targetScale.y = combinedScale.y *2;
-            Mathf.Clamp(targetScale.y, 0, 1);
+            if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+            {
+                // Nếu cả hai có kích thước bằng nhau, scale cả hai
+                targetScaleSmaller.y *= 2f; // Scale lên gấp đôi
+                targetScaleLarger= targetScaleSmaller; // Giữ cùng scale
+            }
+            else
+            {
+                // Scale đối tượng nhỏ hơn
+                targetScaleSmaller.y *= 2f;
+            }
         }
 
         // Animation parameters
         float duration = 0.5f;
-        float elapsedTime = 0;
+        float elapsedTime = 0f;
 
         while (elapsedTime < duration)
         {
-            // Interpolate scale for both objects
-            child1.transform.localScale = Vector3.Lerp(child1.transform.localScale, targetScale, elapsedTime / duration);
-            child2.transform.localScale = Vector3.Lerp(child2.transform.localScale, targetScale, elapsedTime / duration);
+            // Scale đối tượng nhỏ hơn
+            smallerObject.transform.localScale = Vector3.Lerp(smallerObject.transform.localScale, targetScaleSmaller, elapsedTime / duration);
 
-            // Interpolate position
+            // Nếu scale cả hai, thực hiện với largerObject
+            if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+            {
+                largerObject.transform.localScale = Vector3.Lerp(largerObject.transform.localScale, targetScaleLarger, elapsedTime / duration);
+            }
+
+            // Interpolate vị trí
             child1.transform.localPosition = Vector3.Lerp(child1.transform.localPosition, targetPosition1, elapsedTime / duration);
             child2.transform.localPosition = Vector3.Lerp(child2.transform.localPosition, targetPosition2, elapsedTime / duration);
 
@@ -338,12 +373,18 @@ public class CandyBound : MonoBehaviour
             yield return null;
         }
 
-        // Final values
-        child1.transform.localScale = targetScale;
-        child2.transform.localScale = targetScale;
+        // Gán giá trị cuối cùng
+        smallerObject.transform.localScale = targetScaleSmaller;
+
+        if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+        {
+            largerObject.transform.localScale = targetScaleLarger;
+        }
+
         child1.transform.localPosition = targetPosition1;
         child2.transform.localPosition = targetPosition2;
-       
+
+        Debug.Log(this.name + " Scaling completed.");
         isScaling = false;
     }
 
@@ -374,7 +415,8 @@ public class CandyBound : MonoBehaviour
             elapsedTime += Time.deltaTime;
             yield return null;
         }
-
+        Mathf.Clamp(child.transform.localScale.y, 0, 1);
+        Mathf.Clamp(child.transform.localScale.x, 0, 1);
         // Ensure final values are set
         child.transform.localPosition = targetPosition;
         child.transform.localScale = targetScale;

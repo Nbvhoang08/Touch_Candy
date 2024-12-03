@@ -10,15 +10,29 @@ public class Candy : MonoBehaviour
     [SerializeField] private List<Candy> adjacentCandies = new List<Candy>();
     [SerializeField] public bool CanCheck;
     public CandyBound bound;
+    public bool isDespawn;
     // Update is called once per frame
-
+    private void Start()
+    {
+       isDespawn = false;
+    }
     void Update()
     {
         CheckAndDeactivateAdjacentCandies();
+        if (isDespawn)
+        {
+            StartCoroutine(ShrinkAndDeactivate(this.GetComponent<Candy>()));
+        }
         if (bound._done)
         {
             CanCheck = true;
         }
+        Mathf.Clamp(transform.localScale.x, 0, 1);
+        Mathf.Clamp(transform.localScale.y, 0, 1);
+        /*if (transform.localScale.x <=0.01 || transform.localScale.y <= 0.01) 
+        { 
+            gameObject.SetActive(false);
+        }*/
     }
     void CheckAndDeactivateAdjacentCandies()
     {
@@ -54,7 +68,7 @@ public class Candy : MonoBehaviour
                 {
                    
                     Candy hitCandy = hit.collider.GetComponent<Candy>();
-                    if (hitCandy != null && hitCandy.candyType == this.candyType && hitCandy != this.GetComponent<Candy>() &&CanCheck && hitCandy.CanCheck )
+                    if (hitCandy != null && hitCandy.candyType == this.candyType && hitCandy != this.GetComponent<Candy>() &&CanCheck && hitCandy.CanCheck && !adjacentCandies.Contains(hitCandy) )
                     {
                         adjacentCandies.Add(hitCandy);
                     }
@@ -69,13 +83,14 @@ public class Candy : MonoBehaviour
             adjacentCandies.Add(this);
             foreach (Candy candy in adjacentCandies)
             {
-                StartCoroutine(ShrinkAndDeactivate(candy));
+                candy.isDespawn = true;
             }
         }
     }
 
     IEnumerator ShrinkAndDeactivate(Candy candy)
     {
+        isDespawn = false;
         float duration = 0.5f; // Thời gian thu nhỏ
         Vector3 originalScale = candy.transform.localScale;
         float elapsedTime = 0;
@@ -90,6 +105,7 @@ public class Candy : MonoBehaviour
         candy.transform.localScale = Vector3.zero;
         candy.gameObject.SetActive(false);
         candy.bound.HandleDisabledChild();
+        Debug.Log(this.name);
     }
 
 
