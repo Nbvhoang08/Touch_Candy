@@ -7,6 +7,27 @@ public class GameManager : MonoBehaviour
     // Danh sách các loại target có sẵn
     public List<TargetType> AvailableTargetTypes = new List<TargetType>();
 
+
+    public List<GameObject> CandyBound = new List<GameObject>();
+    public Transform SpawmPos1, SpawPos2;
+
+
+    private void Start()
+    {
+        SpawnBound(SpawmPos1.position);
+        SpawnBound(SpawPos2.position);
+    }
+
+
+    public void SpawnBound(Vector3 SpawnPos)
+    {
+        int randomIndex = Random.Range(0,4);
+        Instantiate(CandyBound[randomIndex], SpawnPos, Quaternion.identity);
+    }
+
+
+
+
     // Phương thức để thêm hoặc cập nhật loại target
     public void SetupTargetType(type typeName, Sprite sprite, int targetKPI)
     {
