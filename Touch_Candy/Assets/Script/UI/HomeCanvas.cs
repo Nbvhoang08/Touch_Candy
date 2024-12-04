@@ -20,7 +20,8 @@ public class HomeCanvas : UICanvas
     {
         UIManager.Instance.CloseAll();
         UIManager.Instance.OpenUI<ChooseLevelCanvas>();
-        //SoundManager.Instance.PlayVFXSound(2);
+
+        SoundManager.Instance.PlayClickSound();
 
     }
 
@@ -28,7 +29,8 @@ public class HomeCanvas : UICanvas
     {
         SoundManager.Instance.TurnOn = !SoundManager.Instance.TurnOn;
         UpdateButtonImage();
-        //SoundManager.Instance.PlayVFXSound(2);
+
+        SoundManager.Instance.PlayClickSound();
     }
 
     private void UpdateButtonImage()

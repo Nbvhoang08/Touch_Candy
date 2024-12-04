@@ -11,6 +11,15 @@ public class Candy : MonoBehaviour
     [SerializeField] public bool CanCheck;
     public CandyBound bound;
     public bool isDespawn;
+    public GameManager _gameManager;
+
+    private void Awake()
+    {
+        if(_gameManager == null)
+        {
+            _gameManager = FindAnyObjectByType<GameManager>();
+        }
+    }
     // Update is called once per frame
     private void Start()
     {
@@ -29,16 +38,13 @@ public class Candy : MonoBehaviour
         }
         Mathf.Clamp(transform.localScale.x, 0, 1);
         Mathf.Clamp(transform.localScale.y, 0, 1);
-        /*if (transform.localScale.x <=0.01 || transform.localScale.y <= 0.01) 
-        { 
-            gameObject.SetActive(false);
-        }*/
+        
     }
     void CheckAndDeactivateAdjacentCandies()
     {
 
         Vector3[] directions = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
-        float rayDistance = 1.1f; // Điều chỉnh khoảng cách tùy theo kích thước của object
+        float rayDistance = 1.5f; // Điều chỉnh khoảng cách tùy theo kích thước của object
 
         // Tạo LayerMask để chỉ kiểm tra lớp "Candy"
         int candyLayer = LayerMask.NameToLayer("Candy");
@@ -91,7 +97,7 @@ public class Candy : MonoBehaviour
     IEnumerator ShrinkAndDeactivate(Candy candy)
     {
         isDespawn = false;
-        float duration = 0.5f; // Thời gian thu nhỏ
+        float duration = 0.4f; // Thời gian thu nhỏ
         Vector3 originalScale = candy.transform.localScale;
         float elapsedTime = 0;
 
@@ -101,11 +107,13 @@ public class Candy : MonoBehaviour
             elapsedTime += Time.deltaTime;
             yield return null;
         }
-        
+        _gameManager.UpdateTargetKPI(candyType,1);
+
         candy.transform.localScale = Vector3.zero;
         candy.gameObject.SetActive(false);
+        SoundManager.Instance.PlayVFXSound(1);
         candy.bound.HandleDisabledChild();
-        Debug.Log(this.name);
+        
     }
 
 
@@ -124,7 +132,7 @@ public class Candy : MonoBehaviour
                 scaledDirection *= transform.localScale.y;
             }
 
-            Gizmos.DrawRay(transform.position, scaledDirection * 1.1f);
+            Gizmos.DrawRay(transform.position, scaledDirection * 1.5f);
         }
 
         Gizmos.color = Color.red;

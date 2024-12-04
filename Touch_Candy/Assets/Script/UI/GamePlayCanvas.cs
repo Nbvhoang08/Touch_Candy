@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,10 +10,12 @@ public class GamePlayCanvas : UICanvas
 {
     // Start is called before the first frame update
     [SerializeField] private Text _levelText;
+    [SerializeField] private Text _cointText;
     [SerializeField] private GameManager _gameManager;
     [SerializeField] private Transform _targetContainerPanel;
     [SerializeField] private GameObject _targetPrefab;
-
+    [SerializeField] private Animator _animHarmer;
+    [SerializeField] private Animator _amimRenew; 
     private void Awake()
     {
         if (_gameManager == null)
@@ -23,7 +27,26 @@ public class GamePlayCanvas : UICanvas
     {
         SpawnTargetUI();
     }
- 
+    private void Update()
+    {
+        UpdateLevelText();
+        if (_gameManager == null)
+        {
+            _gameManager = FindObjectOfType<GameManager>();
+            SpawnTargetUI();
+            Debug.Log("Spawn Lai");
+
+        }
+        UpdateTargetKPIProgress();
+        _animHarmer.SetBool("choosen", _gameManager.IsDestroy);
+        _amimRenew.SetBool("choosen", _gameManager.ReSpawn);
+        if(_cointText != null)
+        {
+            _cointText.text = CoinManager.Instance.GetCoinCount().ToString();
+        }
+       
+
+    }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -31,83 +54,40 @@ public class GamePlayCanvas : UICanvas
 
     }
 
+    public void HarmerBtn()
+    {
+        if(CoinManager.Instance.GetCoinCount() >=500)
+        {
+            _gameManager.OnDestroyBound();
+            CoinManager.Instance.SubtractCoins(500);
+        }
+      
+        
+    }
+
+    public void RevertBtn()
+    {
+        if (CoinManager.Instance.GetCoinCount() >= 100)
+        {
+            _gameManager.RespawnCandy();
+            CoinManager.Instance.SubtractCoins(100);
+
+        }
+  
+       
+    }
+
 
     public void PauseBtn()
     {
         UIManager.Instance.OpenUI<PauseCanvas>();
+        SoundManager.Instance.PlayClickSound();
         Time.timeScale = 0;
     }
 
-    private void Update()
-    {
-        UpdateLevelText();
-        if (_gameManager == null)
-        {
-            _gameManager = FindObjectOfType<GameManager>();
-        }
-        UpdateTargetKPIProgress();
 
-        // Kiểm tra điều kiện hoàn thành
-        //if (CheckTargetCompletion())
-        //{
-        //    // Xử lý khi tất cả target đều hoàn thành
-        //    // Ví dụ: Chuyển màn, hiển thị thông báo chiến thắng,...
-        //    HandleLevelCompletion();
-        //}
 
-    }
-
-    public void UpdateTargetKPIProgress()
-    {
-        // Kiểm tra GameManager
-        if (_gameManager == null)
-        {
-            _gameManager = FindObjectOfType<GameManager>();
-            if (_gameManager == null)
-            {
-                Debug.LogWarning("GameManager không tồn tại!");
-                return;
-            }
-        }
-
-        // Kiểm tra xem có target UI hiện tại không
-        if (_targetContainerPanel == null)
-        {
-            Debug.LogWarning("Target Container Panel chưa được thiết lập!");
-            return;
-        }
-
-        // Lặp qua các phần tử target UI hiện có
-        for (int i = 0; i < _targetContainerPanel.childCount; i++)
-        {
-            // Kiểm tra nếu vượt quá số lượng target types
-            if (i >= _gameManager.AvailableTargetTypes.Count)
-            {
-                break;
-            }
-
-            // Lấy phần tử UI và target type tương ứng
-            GameObject targetUIElement = _targetContainerPanel.GetChild(i).gameObject;
-            TargetType currentTargetType = _gameManager.AvailableTargetTypes[i];
-
-            // Tìm text KPI
-            Text kpiText = targetUIElement.GetComponentInChildren<Text>();
-            if (kpiText != null)
-            {
-                // Cập nhật text KPI
-                kpiText.text = $"{currentTargetType.CurrentKPI}/{currentTargetType.TargetKPI}";
-            }
-
-            // Tìm thanh progress (giả sử có Image làm progress bar)
-            Image progressBar = targetUIElement.transform.Find("ProgressBar")?.GetComponent<Image>();
-            if (progressBar != null)
-            {
-                // Tính toán và cập nhật tiến độ
-                float progressPercentage = (float)currentTargetType.CurrentKPI / currentTargetType.TargetKPI;
-                progressBar.fillAmount = Mathf.Clamp01(progressPercentage);
-            }
-        }
-    }
+  
     public bool CheckTargetCompletion()
     {
         bool allTargetsCompleted = true;
@@ -148,6 +128,8 @@ public class GamePlayCanvas : UICanvas
         if (_gameManager == null)
         {
             _gameManager = FindObjectOfType<GameManager>();
+           
+            
             
         }
 
@@ -168,16 +150,78 @@ public class GamePlayCanvas : UICanvas
             Text kpiText = targetUIElement.GetComponentInChildren<Text>();
             if (kpiText != null)
             {
-                kpiText.text = targetType.CurrentKPI.ToString();
+                if (targetType.CurrentKPI > 0)
+                {
+                    kpiText.text = targetType.CurrentKPI.ToString();
+                }
+                else
+                {
+                    kpiText.text = "Done!";
+                }
+               
             }
         }
     }
-
-    // Phương thức cập nhật KPI động
-    public void UpdateTargetKPI()
+    public void UpdateTargetKPIProgress()
     {
-        SpawnTargetUI();
+        // Kiểm tra GameManager
+        if (_gameManager == null)
+        {
+            _gameManager = FindObjectOfType<GameManager>();
+            if (_gameManager == null)
+            {
+                
+                return;
+               
+            }
+        }
+
+        // Kiểm tra xem có target UI hiện tại không
+        if (_targetContainerPanel == null)
+        {
+            Debug.LogWarning("Target Container Panel chưa được thiết lập!");
+            return;
+        }
+
+        // Lặp qua các phần tử target UI hiện có
+        for (int i = 0; i < _targetContainerPanel.childCount; i++)
+        {
+            // Kiểm tra nếu vượt quá số lượng target types
+            if (i >= _gameManager.AvailableTargetTypes.Count)
+            {
+                break;
+            }
+
+            // Lấy phần tử UI và target type tương ứng
+            GameObject targetUIElement = _targetContainerPanel.GetChild(i).gameObject;
+            TargetType currentTargetType = _gameManager.AvailableTargetTypes[i];
+
+            // Tìm text KPI
+            Text kpiText = targetUIElement.GetComponentInChildren<Text>();
+            if (kpiText != null)
+            {
+
+
+                if (currentTargetType.CurrentKPI > 0)
+                {
+                    // Cập nhật text KPI
+                    kpiText.text = $"{currentTargetType.CurrentKPI}/{currentTargetType.TargetKPI}";
+                }
+                else
+                {
+                    kpiText.text = $"DONE!";
+                }
+
+
+
+
+            }
+
+
+        }
     }
+
+
 
 
 
@@ -190,6 +234,11 @@ public class TargetType
     public Sprite TargetSprite;     // Hình ảnh đại diện
     public int CurrentKPI;          // Số KPI hiện tại
     public int TargetKPI;           // Mục tiêu KPI
+    public bool isDone => CurrentKPI <= 0 ;
+    void Start()
+    {
+        CurrentKPI = TargetKPI;
+    }
 }
 public enum type
 {

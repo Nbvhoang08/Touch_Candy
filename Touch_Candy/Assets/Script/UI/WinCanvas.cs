@@ -10,6 +10,10 @@ public class WinCanvas : UICanvas
     public Sprite OffVolume;
 
     [SerializeField] private Image buttonImage;
+    private void OnEnable()
+    {
+        CoinManager.Instance.AddCoins(100);
+    }
     void Start()
     {
 
@@ -21,7 +25,8 @@ public class WinCanvas : UICanvas
         Time.timeScale = 1;
         UIManager.Instance.CloseUI<WinCanvas>(0.2f);
         LoadNextScene();
-        //SoundManager.Instance.PlayVFXSound(2);
+
+        SoundManager.Instance.PlayClickSound();
 
     }
 
@@ -30,7 +35,7 @@ public class WinCanvas : UICanvas
         UIManager.Instance.CloseAll();
         Time.timeScale = 1;
         SceneManager.LoadScene("Home");
-
+        SoundManager.Instance.PlayClickSound();
         UIManager.Instance.OpenUI<HomeCanvas>();
 
     }
@@ -38,7 +43,7 @@ public class WinCanvas : UICanvas
     {
         SoundManager.Instance.TurnOn = !SoundManager.Instance.TurnOn;
         UpdateButtonImage();
-
+        SoundManager.Instance.PlayClickSound();
     }
 
     private void UpdateButtonImage()
@@ -60,12 +65,11 @@ public class WinCanvas : UICanvas
         if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
         {
             SceneManager.LoadScene(nextSceneIndex);
-            Debug.Log("Loading next scene");
         }
         else
         {
             SceneManager.LoadScene("Home");
-            Debug.Log("Home scene");
+         
         }
     }
 

@@ -4,6 +4,8 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using System.Threading.Tasks;
+using System.Net;
+using Unity.Mathematics;
 public class CandyBound : MonoBehaviour
 {
     // Start is called before the first frame update
@@ -13,9 +15,8 @@ public class CandyBound : MonoBehaviour
     private Vector3 startPosition;
     private bool isDragging = false;
     public bool _done = false;
-    private Collider2D cellCollider;
     public List<GameObject> CandyChild = new List<GameObject>();
-    private bool isScaling = false;
+    [SerializeField] private bool isScaling = false;
     private GameManager _gameManager;
     private void Awake()
     {
@@ -23,12 +24,27 @@ public class CandyBound : MonoBehaviour
         {
             _gameManager = FindAnyObjectByType<GameManager>();
         }
+        
     }
     void Start()
     {
-        InitCandy();
         startPosition = transform.position;
+        ResetCollider();
+        InitCandy();
 
+    }
+    void ResetCollider()
+    {
+        Collider2D collider = GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            collider.enabled = false; // Tắt collider
+            collider.enabled = true;  // Bật lại collider
+        }
+        else
+        {
+            Debug.LogWarning("Collider not found on the object!" + this.name);
+        }
     }
 
     // Update is called once per frame
@@ -38,63 +54,108 @@ public class CandyBound : MonoBehaviour
         {
             _gameManager = FindAnyObjectByType<GameManager>();
         }
+
+        // Xử lý kéo thả bằng Input
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Kiểm tra xem chuột có click vào object này không
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
+
+            if (hit.collider != null && hit.collider.gameObject == gameObject)
+            {
+               
+                if (_done)
+                {
+                    if (_gameManager.IsDestroy)
+                    {
+                        _gameManager.SpawnHarmer(transform);
+                        StartCoroutine(DestroyAfterDelay());
+                    }
+                    if (_gameManager.ReSpawn)
+                    {
+                        _gameManager.ReSpawn = false;
+                        InitCandy();
+                    }
+                }
+                else
+                {
+                    isDragging = true;
+                    SoundManager.Instance.PlayVFXSound(0);
+                }
+            }
+        }
+
+        // Kéo object
         if (isDragging)
         {
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             mousePosition.z = 0; // Đảm bảo object không thay đổi trục Z
             transform.position = mousePosition;
         }
-       
 
+        // Thả chuột
+        if (Input.GetMouseButtonUp(0))
+        {
+            isDragging = false;
+            Vector3 snappedPosition = SnapToGrid(transform.position);
+
+            if (!_done)
+            {
+                if (IsValidCell(snappedPosition))
+                {
+                    transform.position = snappedPosition;
+                    foreach (GameObject candy in CandyChild)
+                    {
+                        candy.GetComponent<Candy>().CanCheck = true;
+                    }
+                    _gameManager.SpawnBound(startPosition);
+                    _done = true;
+                }
+                else
+                {
+                    StartCoroutine(MoveToStartPosition());
+                }
+            }
+        }
+
+        // Các logic còn lại giữ nguyên
         if (CandyChild.All(child => !child.activeSelf))
         {
             StartCoroutine(DestroyAfterDelay());
         }
 
-
-
-    }
-    private IEnumerator DestroyAfterDelay()
-    {
-        yield return new WaitForSeconds(0.5f);
-        Destroy(gameObject); // Destroy object chính sau 0.5 giây
-     
-    }
-
-    /// <summary>
-    /// Handle Movement
-    /// </summary>
-    void OnMouseDown()
-    {
-      
-        if(!_done)
-        isDragging = true;
-        
-    }
-    void OnMouseUp()
-    {
-        isDragging = false;
-        Vector3 snappedPosition = SnapToGrid(transform.position);
-        if (!_done)
+        // Xử lý logic scale và child
+        if (!isScaling && CandyChild.Count(child => child.activeSelf) == 2)
         {
-            if (IsValidCell(snappedPosition))
+            bool allScalesLessThanOne = CandyChild
+                .Where(child => child.activeSelf)
+                .Any(child => child.transform.localScale.x < 1 && child.transform.localScale.y < 1);
+            if (allScalesLessThanOne)
             {
-                transform.position = snappedPosition;
-                foreach (GameObject candy in CandyChild)
-                {
-                    candy.GetComponent<Candy>().CanCheck = true;
-                }
-                _gameManager.SpawnBound(startPosition);
-
-                _done = true;
-            }
-            else
-            {
-                StartCoroutine(MoveToStartPosition());
+                HandleDisabledChild();
             }
         }
-       
+        else if (!isScaling && CandyChild.Count(child => child.activeSelf) == 1)
+        {
+            float totalScaleX = CandyChild.Where(child => child.activeSelf)
+                               .Sum(child => child.transform.localScale.x);
+            float totalScaleY = CandyChild.Where(child => child.activeSelf)
+                                        .Sum(child => child.transform.localScale.y);
+            if (totalScaleX < 1 || totalScaleY < 1)
+            {
+                HandleDisabledChild();
+            }
+        }
     }
+
+    private IEnumerator DestroyAfterDelay()
+    {
+        yield return new WaitForSeconds(0.4f);
+        Destroy(gameObject); // Destroy object chính sau 0.5 giây
+
+    }
+
     Vector3 SnapToGrid(Vector3 position)
     {
         float x = Mathf.Round(position.x / 2) * 2;
@@ -189,7 +250,13 @@ public class CandyBound : MonoBehaviour
         {
             // Find the disabled child
             GameObject disabledChild = CandyChild.FirstOrDefault(child => !child.activeSelf);
-            if (disabledChild == null) return;
+            if (disabledChild == null)
+            {
+              
+                HandleDisabledChild();
+                return;
+            } 
+               
 
             // Find the best child to scale
             GameObject childToScale = FindBestChildToScale(disabledChild);
@@ -240,7 +307,6 @@ public class CandyBound : MonoBehaviour
         Vector3 originalScale = childToScale.transform.localScale;
         Vector3 targetScale = originalScale;
 
-     
     
         // Calculate target position (midpoint between the two children)
         Vector3 originalPosition = childToScale.transform.localPosition;
@@ -256,10 +322,11 @@ public class CandyBound : MonoBehaviour
         }
 
         // Animation parameters
-        float duration = 0.5f;
+        float duration = 0.4f;
         float elapsedTime = 0;
         Mathf.Clamp(childToScale.transform.localScale.y, 0, 1);
         Mathf.Clamp(childToScale.transform.localScale.x, 0, 1);
+       
         while (elapsedTime < duration)
         {
             // Interpolate scale
@@ -286,12 +353,12 @@ public class CandyBound : MonoBehaviour
     {
         if (objectsToScale == null || objectsToScale.Count < 2)
         {
-            Debug.LogError("Invalid input: At least 2 objects are required.");
+           
             yield break;
         }
 
         isScaling = true;
-        Debug.Log(this.name + " Scaling started.");
+
 
         // Lấy hai đối tượng
         GameObject child1 = objectsToScale[0];
@@ -301,73 +368,84 @@ public class CandyBound : MonoBehaviour
         Vector3 scale1 = child1.transform.localScale;
         Vector3 scale2 = child2.transform.localScale;
 
-        // Tính toán đối tượng nhỏ hơn (nếu cần scale riêng lẻ)
+        // Phân loại đối tượng lớn hơn và nhỏ hơn
         GameObject smallerObject = scale1.magnitude < scale2.magnitude ? child1 : child2;
         GameObject largerObject = smallerObject == child1 ? child2 : child1;
 
+        // Lấy vị trí ban đầu
+        Vector3 originalPositionSmaller = smallerObject.transform.localPosition;
+        Vector3 originalPositionLarger = largerObject.transform.localPosition;
+
+        // Tính toán target scale và position
         Vector3 targetScaleSmaller = smallerObject.transform.localScale;
         Vector3 targetScaleLarger = largerObject.transform.localScale;
+        Vector3 targetPositionSmaller = originalPositionSmaller;
+        Vector3 targetPositionLarger = originalPositionLarger;
 
-        // Xác định target scale
-       
-
-        // Tính toán target position cho cả hai
-        Vector3 targetPosition1 = child1.transform.localPosition;
-        Vector3 targetPosition2 = child2.transform.localPosition;
-
-        if (child1.transform.localPosition.x == child2.transform.localPosition.x)
+        if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
         {
-            // Nếu trục X của hai đối tượng giống nhau
-            targetPosition1.x = 0f;
-            targetPosition2.x = 0f;
-            if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+            // Trường hợp kích thước bằng nhau
+            targetScaleSmaller *= 2f;
+           
+
+            // Tính điểm giữa và di chuyển cả hai đối tượng
+            if(originalPositionLarger.x == originalPositionSmaller.x)
             {
-                // Nếu cả hai có kích thước bằng nhau, scale cả hai
-                targetScaleSmaller.x *= 2f; // Scale lên gấp đôi
-                targetScaleLarger = targetScaleSmaller; // Giữ cùng scale
+                targetPositionSmaller.x = 0;
+                targetPositionLarger.x = 0;
+                targetScaleSmaller.x *= 1f;
+                targetScaleSmaller.y = 0.5f;
+                targetScaleLarger = targetScaleSmaller;
+                Mathf.Clamp(targetScaleSmaller.x, 0, 1);
+               
             }
             else
             {
-                // Scale đối tượng nhỏ hơn
-                targetScaleSmaller.x *= 2f;
+                targetPositionSmaller.y = 0;
+                targetPositionLarger.y = 0;
+                targetScaleSmaller.y *= 1f;
+                targetScaleSmaller.x = 0.5f;
+                Mathf.Clamp(targetScaleSmaller.y, 0, 1);
+                targetScaleLarger = targetScaleSmaller;
+               
             }
+            
         }
         else
         {
-            // Nếu trục Y của hai đối tượng giống nhau
-            targetPosition1.y = 0f;
-            targetPosition2.y = 0f;
-            if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
+            // Trường hợp kích thước khác nhau
+            targetScaleSmaller = targetScaleLarger;
+            if (targetPositionLarger.x == 0) 
             {
-                // Nếu cả hai có kích thước bằng nhau, scale cả hai
-                targetScaleSmaller.y *= 2f; // Scale lên gấp đôi
-                targetScaleLarger= targetScaleSmaller; // Giữ cùng scale
-            }
-            else
+                targetPositionSmaller.x = 0;
+             
+                 
+            }else if(targetPositionLarger.y == 0)
             {
-                // Scale đối tượng nhỏ hơn
-                targetScaleSmaller.y *= 2f;
+                targetPositionSmaller.y = 0;
+  
             }
+            // Di chuyển nhỏ hơn đến vị trí lớn hơn
         }
 
         // Animation parameters
-        float duration = 0.5f;
+        float duration = 0.4f;
         float elapsedTime = 0f;
 
         while (elapsedTime < duration)
         {
-            // Scale đối tượng nhỏ hơn
+            // Interpolate scale
             smallerObject.transform.localScale = Vector3.Lerp(smallerObject.transform.localScale, targetScaleSmaller, elapsedTime / duration);
 
-            // Nếu scale cả hai, thực hiện với largerObject
             if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
             {
+                // Nếu bằng nhau, scale cả hai
                 largerObject.transform.localScale = Vector3.Lerp(largerObject.transform.localScale, targetScaleLarger, elapsedTime / duration);
             }
 
-            // Interpolate vị trí
-            child1.transform.localPosition = Vector3.Lerp(child1.transform.localPosition, targetPosition1, elapsedTime / duration);
-            child2.transform.localPosition = Vector3.Lerp(child2.transform.localPosition, targetPosition2, elapsedTime / duration);
+            // Interpolate position
+            smallerObject.transform.localPosition = Vector3.Lerp(smallerObject.transform.localPosition, targetPositionSmaller, elapsedTime / duration);
+            largerObject.transform.localPosition = Vector3.Lerp(largerObject.transform.localPosition, targetPositionLarger, elapsedTime / duration);
 
             elapsedTime += Time.deltaTime;
             yield return null;
@@ -375,16 +453,18 @@ public class CandyBound : MonoBehaviour
 
         // Gán giá trị cuối cùng
         smallerObject.transform.localScale = targetScaleSmaller;
+        smallerObject.transform.localPosition = targetPositionSmaller;
+
 
         if (Mathf.Approximately(scale1.magnitude, scale2.magnitude))
         {
             largerObject.transform.localScale = targetScaleLarger;
+            largerObject.transform.localPosition = targetPositionLarger;
+            
         }
+       
 
-        child1.transform.localPosition = targetPosition1;
-        child2.transform.localPosition = targetPosition2;
 
-        Debug.Log(this.name + " Scaling completed.");
         isScaling = false;
     }
 
@@ -403,7 +483,7 @@ public class CandyBound : MonoBehaviour
         Vector3 originalScale = child.transform.localScale;
 
         // Animation parameters
-        float duration = 0.5f;
+        float duration = 0.4f;
         float elapsedTime = 0;
 
         while (elapsedTime < duration)
@@ -439,14 +519,13 @@ public class CandyBound : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-
+        CandyChild = new List<GameObject>();    
         // Ensure we have enough objects in the CandyPool
         if (CandyPool.Count < 4)
         {
-            Debug.LogError("Not enough objects in CandyPool to spawn children!");
             return;
         }
-
+        //CandyChild = new List<GameObject>();
         switch (typeCandy)
         {
             case TypeCandy.One:
@@ -466,24 +545,24 @@ public class CandyBound : MonoBehaviour
 
     private void SpawnSingleChild()
     {
-        int RandomIndex = Random.Range(0,CandyPool.Count);
+        int RandomIndex = UnityEngine.Random.Range(0,CandyPool.Count);
         GameObject child = Instantiate(CandyPool[RandomIndex], transform);
-        child.transform.localPosition = new Vector3(0,0,2); 
         child.transform.localScale = Vector3.one;
         child.GetComponent<Candy>().bound = this.GetComponent<CandyBound>();
+        child.transform.localPosition = new Vector3(0, 0, 2);
         CandyChild.Add(child);
     }
 
     private void SpawnTwoChildren()
     {
         // Randomly choose between horizontal and vertical layout
-        bool isHorizontal = Random.value > 0.5f;
-
+        bool isHorizontal = UnityEngine.Random.value > 0.5f;
+       
         // Get unique random indices from CandyPool
         List<int> availableIndices = Enumerable.Range(0, CandyPool.Count).ToList();
-        int index1 = availableIndices[Random.Range(0, availableIndices.Count)];
+        int index1 = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
         availableIndices.Remove(index1);
-        int index2 = availableIndices[Random.Range(0, availableIndices.Count)];
+        int index2 = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
 
         GameObject child1 = Instantiate(CandyPool[index1], transform);
         GameObject child2 = Instantiate(CandyPool[index2], transform);
@@ -491,6 +570,7 @@ public class CandyBound : MonoBehaviour
         CandyChild.Add(child2);
         child1.GetComponent<Candy>().bound = this.GetComponent<CandyBound>();
         child2.GetComponent<Candy>().bound = this.GetComponent<CandyBound>();
+
         if (isHorizontal)
         {
             // Horizontal layout
@@ -515,14 +595,15 @@ public class CandyBound : MonoBehaviour
 
     private void SpawnThreeChildren()
     {
+       
         // Get unique random indices from CandyPool
         List<int> availableIndices = Enumerable.Range(0, CandyPool.Count).ToList();
         // Randomly select 3 unique objects
-        int index1 = availableIndices[Random.Range(0, availableIndices.Count)];
+        int index1 = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
         availableIndices.Remove(index1);
-        int index2 = availableIndices[Random.Range(0, availableIndices.Count)];
+        int index2 = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
         availableIndices.Remove(index2);
-        int index3 = availableIndices[Random.Range(0, availableIndices.Count)];
+        int index3 = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
 
         GameObject child1 = Instantiate(CandyPool[index1], transform);
         GameObject child2 = Instantiate(CandyPool[index2], transform);
@@ -534,7 +615,7 @@ public class CandyBound : MonoBehaviour
         child2.GetComponent<Candy>().bound = this.GetComponent<CandyBound>();
         child3.GetComponent<Candy>().bound = this.GetComponent<CandyBound>();
         // Randomize layout to create different square-like arrangements
-        int layoutChoice = Random.Range(0, 4);
+        int layoutChoice = UnityEngine.Random.Range(0, 4);
 
         switch (layoutChoice)
         {
@@ -554,7 +635,6 @@ public class CandyBound : MonoBehaviour
                 child1.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
                 child2.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
                 child3.transform.localScale = new Vector3(1f, 0.5f, 1f);
-
                 child1.transform.localPosition = new Vector3(-0.25f, 0.25f, 2);
                 child2.transform.localPosition = new Vector3(0.25f, 0.25f, 2);
                 child3.transform.localPosition = new Vector3(0, -0.25f, 2);
@@ -586,6 +666,7 @@ public class CandyBound : MonoBehaviour
 
     private void SpawnFourChildren()
     {
+       
         // Get unique random indices from CandyPool
         List<int> availableIndices = Enumerable.Range(0, CandyPool.Count).ToList();
 
@@ -593,7 +674,7 @@ public class CandyBound : MonoBehaviour
         List<GameObject> selectedChildren = new List<GameObject>();
         for (int i = 0; i < 4; i++)
         {
-            int randomIndex = availableIndices[Random.Range(0, availableIndices.Count)];
+            int randomIndex = availableIndices[UnityEngine.Random.Range(0, availableIndices.Count)];
             selectedChildren.Add(Instantiate(CandyPool[randomIndex], transform));
             availableIndices.Remove(randomIndex);
         }

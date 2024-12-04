@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8723930007544491184}
   - component: {fileID: 1873967545070346764}
   - component: {fileID: 716937880578507705}
+  - component: {fileID: 7675727084109840980}
   m_Layer: 0
   m_Name: Cell
   m_TagString: Cell
@@ -130,3 +131,18 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &7675727084109840980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7495530253213366819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45906760379bead4fa0a599a1f9a3693, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  filled: 0
+  detectionRadius: 0.5
+  candyBoundPrefab: {fileID: 0}

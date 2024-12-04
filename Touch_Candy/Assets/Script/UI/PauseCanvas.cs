@@ -21,6 +21,8 @@ public class PauseCanvas : UICanvas
         Time.timeScale = 1;
         UIManager.Instance.CloseUI<PauseCanvas>(0.2f);
 
+        SoundManager.Instance.PlayClickSound();
+
     }
 
     public void HomeBtn()
@@ -28,7 +30,7 @@ public class PauseCanvas : UICanvas
         UIManager.Instance.CloseAll();
         Time.timeScale = 1;
         SceneManager.LoadScene("Home");
-
+        SoundManager.Instance.PlayClickSound();
         UIManager.Instance.OpenUI<HomeCanvas>();
 
     }
@@ -36,6 +38,7 @@ public class PauseCanvas : UICanvas
     {
         SoundManager.Instance.TurnOn = !SoundManager.Instance.TurnOn;
         UpdateButtonImage();
+        SoundManager.Instance.PlayClickSound();
 
     }
 

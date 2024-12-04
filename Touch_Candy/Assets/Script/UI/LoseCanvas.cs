@@ -22,6 +22,8 @@ public class LoseCanvas : UICanvas
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         UIManager.Instance.CloseUI<LoseCanvas>(0.1f);
 
+        SoundManager.Instance.PlayClickSound();
+
 
     }
 
@@ -32,12 +34,15 @@ public class LoseCanvas : UICanvas
         SceneManager.LoadScene("Home");
         UIManager.Instance.OpenUI<HomeCanvas>();
 
+        SoundManager.Instance.PlayClickSound();
+
     }
     public void SoundBtn()
     {
         SoundManager.Instance.TurnOn = !SoundManager.Instance.TurnOn;
         UpdateButtonImage();
 
+        SoundManager.Instance.PlayClickSound();
     }
 
     private void UpdateButtonImage()

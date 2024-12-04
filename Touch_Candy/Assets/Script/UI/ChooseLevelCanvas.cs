@@ -33,7 +33,7 @@ public class ChooseLevelCanvas : UICanvas
     private void OnEnable()
     {
         InitializeLevelButtons();
-        Debug.Log("LevelCanvas");
+    
         // Ẩn loading screen nếu có
         if (loadingScreen != null)
         {
@@ -51,9 +51,10 @@ public class ChooseLevelCanvas : UICanvas
 
     public void backBtn()
     {
+        SoundManager.Instance.PlayClickSound();
         UIManager.Instance.CloseAll();
         UIManager.Instance.OpenUI<HomeCanvas>();
-
+       
     }
 
 
@@ -66,7 +67,7 @@ public class ChooseLevelCanvas : UICanvas
             Destroy(child.gameObject);
         }
 
-        Debug.Log("Canvas Setup");
+      
 
         for (int i = 0; i < levels.Count; i++)
         {
@@ -181,7 +182,7 @@ public class ChooseLevelCanvas : UICanvas
     {
         if (levelIndex >= 0 && levelIndex < levels.Count && levels[levelIndex].isUnlocked)
         {
-            //SoundManager.Instance.PlayPopUpSound();
+            SoundManager.Instance.PlayClickSound();
             StartCoroutine(LoadLevelSequence(levelIndex));
         }
     }
