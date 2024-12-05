@@ -1472,7 +1472,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4396046027121499072, guid: dfaf05bb487aa9d47ae3c819a5099484, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1541,7 +1541,7 @@ Camera:
   far clip plane: 1000
   field of view: 60.000004
   orthographic: 1
-  orthographic size: 8.002038
+  orthographic size: 12.984615
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -1606,7 +1606,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1565773743219473537, guid: eda5bd17c2a91654ba3c7e4c62857542, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4825816581513189522, guid: eda5bd17c2a91654ba3c7e4c62857542, type: 3}
       propertyPath: _done
@@ -1618,7 +1618,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007302441312239705, guid: eda5bd17c2a91654ba3c7e4c62857542, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7007302441312239705, guid: eda5bd17c2a91654ba3c7e4c62857542, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1691,7 +1691,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2912685317430459904, guid: cf4914a6a60bddd408b7f7c7b2357a8a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6813102717610513200, guid: cf4914a6a60bddd408b7f7c7b2357a8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1699,7 +1699,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6813102717610513200, guid: cf4914a6a60bddd408b7f7c7b2357a8a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 6813102717610513200, guid: cf4914a6a60bddd408b7f7c7b2357a8a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1784,7 +1784,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7850152300148439997, guid: b681937d9e1c6e04b96b2288b84af6e2, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7902786692127393412, guid: b681937d9e1c6e04b96b2288b84af6e2, type: 3}
       propertyPath: m_LocalPosition.x

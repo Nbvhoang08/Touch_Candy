@@ -6316,71 +6316,71 @@ MonoBehaviour:
   - levelName: 02
     sceneName: 2
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 03
     sceneName: 3
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 04
     sceneName: 4
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 05
     sceneName: 5
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 06
     sceneName: 6
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 07
     sceneName: 7
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 08
     sceneName: 8
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 09
     sceneName: 9
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 10
     sceneName: 10
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 11
     sceneName: 11
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 12
     sceneName: 12
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 13
     sceneName: 13
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 14
     sceneName: 14
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 15
     sceneName: 15
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 16
     sceneName: 16
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 17
     sceneName: 17
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 18
     sceneName: 18
     levelButton: {fileID: 0}
-    isUnlocked: 1
+    isUnlocked: 0
   - levelName: 19
     sceneName: 19
     levelButton: {fileID: 0}
